@@ -81,7 +81,7 @@ export default class IssueDragger extends BimBaseDragger {
 				} else if (entityId.getType() === 2) {
 					handle = entityId.openObjectAsInsert().getNativeDatabaseHandle();
 				}
-				console.log(handle);
+				console.log("ola", handle);
 			}
 		}
 

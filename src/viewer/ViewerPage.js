@@ -394,18 +394,20 @@ class Viewer extends Component {
 
   getProperties = async (handle) => {
     try {
-      this.propertiesEvents.loadingProperties.next(true);
-      const props = await this.modelContext.getPropertiesByHandle(handle);
-      if (this.state.isVisibleProperties) {
-        this.propertiesEvents.completeLoadProperties.next(props);
-        this.lastProperties = null;
-      } else {
-        this.lastProperties = props;
-      }
-    } catch (e) {
-      console.error("Cannot load properties.", e);
-      this.propertiesEvents.errorLoadProperties.next(new Error("No properties found"));
-    }
+			this.propertiesEvents.loadingProperties.next(true);
+			const props = await this.modelContext.getPropertiesByHandle(handle);
+			if (this.state.isVisibleProperties) {
+				this.propertiesEvents.completeLoadProperties.next(props);
+				this.lastProperties = null;
+			} else {
+				this.lastProperties = props;
+			}
+		} catch (e) {
+			console.error("Cannot load properties.", e);
+			this.propertiesEvents.errorLoadProperties.next(
+				new Error("No properties found")
+			);
+		}
   };
 
   openModel = async (model) => {
