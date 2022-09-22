@@ -1,0 +1,10 @@
+{
+  "registration_host": "http://localhost:9000",
+  "api_host": "http://127.0.0.1:8080",
+  "visualizejs_url": "./Visualized.js", 
+  "pageSize": 16,
+  "refreshFilesTimeout": 5000,
+  "chunkLoadingTime": 12000,
+  "cda": true,
+  "supportFormats": [ "DWG", "DGN", "DWF", "DXF", "OBJ", "RCS", "RFA", "RVT", "IFC", "NWC", "NWD", "VSF", "STL" ]
+}
