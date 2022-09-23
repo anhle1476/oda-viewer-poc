@@ -1,9 +1,10 @@
 import BimBaseDragger from "./BimBaseDragger";
 
-export default class IssueDragger extends BimBaseDragger {
-	// TODO: replace with issue provider
-	static issues = [];
+export const ISSUE_PREFIX = "Issue_";
+export const ISSUE_ENTITY_PREFIX =
+	BimBaseDragger.OdConst.MARKUP_ENTITY_PREFIX + ISSUE_PREFIX;
 
+export default class IssueDragger extends BimBaseDragger {
 	constructor(...args) {
 		super(...args);
 		this.press = false;
@@ -17,9 +18,8 @@ export default class IssueDragger extends BimBaseDragger {
 
 	start(x, y) {
 		this.point = this.getViewer().screenToWorld(x, y);
-
-		const issue = this._existingIssue(x, y);
-		console.log(issue);
+		this.entity = this._existingIssue(x, y);
+		this._updateFrame();
 	}
 
 	drag(x, y) {
@@ -30,39 +30,34 @@ export default class IssueDragger extends BimBaseDragger {
 	}
 
 	end() {
-		if (this.entity) {
-			this.entity.delete();
-			this.entity = null;
-		}
+		this.point = null;
+		this.entity = null;
 	}
 
 	_updateFrame() {
-		if (this.entity) {
-			const model = this.getViewer().getMarkupModel();
-			model.removeEntity(this.entity);
-			model.delete();
-			this.entity.delete();
-		}
-
 		if (!this.point) return;
 
-		this.entity = this.getActiveMarkupEntity("Issue");
+		if (!this.entity) {
+			this.entity = this.getActiveMarkupEntity(
+				ISSUE_PREFIX + crypto.randomUUID()
+			);
+		}
 
 		const entityPtr = this.entity.openObject();
-		const issueGeoId = entityPtr.appendSphere(
-			this.point,
-			2,
-			[0, 1, 0],
-			[1, 0, 0]
-		);
 
-		IssueDragger.issues.push(issueGeoId);
+		const geometryItr = entityPtr.getGeometryDataIterator();
 
-		this.deleteAll([entityPtr]);
+		if (!geometryItr.done()) {
+			// have an existing geometry
+			const sphereData = geometryItr.getGeometryData().openAsSphere();
+			sphereData.setCenter(this.point);
+		} else {
+			entityPtr.appendSphere(this.point, 2, [0, 1, 0], [1, 0, 0]);
+		}
 	}
 
 	_existingIssue(x, y) {
-		let existingIssue = null;
+		let existingIssue = undefined;
 
 		const viewer = this.getViewer();
 
@@ -70,21 +65,42 @@ export default class IssueDragger extends BimBaseDragger {
 			viewer.unselect();
 			viewer.select(x, y, x, y);
 
-			existingIssue = viewer.getSelected();
+			const selectSet = viewer.getSelected();
 
-			const itr = existingIssue.getIterator();
+			const itr = selectSet.getIterator();
 			if (!itr.done()) {
 				const entityId = itr.getEntity();
-				let handle = -1;
-				if (entityId.getType() === 1) {
-					handle = entityId.openObject().getNativeDatabaseHandle();
-				} else if (entityId.getType() === 2) {
-					handle = entityId.openObjectAsInsert().getNativeDatabaseHandle();
+				console.log("entity", entityId);
+
+				const selectedEntity = entityId.openObject();
+				const issueName = this._getIssueNameFromEntityName(
+					selectedEntity.getName()
+				);
+				if (!issueName) {
+					// not an issue -> revert the selection
+					viewer.unselect();
+				} else {
+					existingIssue = entityId;
 				}
-				console.log("ola", handle);
 			}
 		}
 
 		return existingIssue;
+	}
+
+	_getIssueProvider() {
+		return this.subject.issueProvider; // subject is the BimViewer;
+	}
+
+	_getEntityNameByIssueName(issueName) {
+		return BimBaseDragger.OdConst.MARKUP_ENTITY_PREFIX + issueName;
+	}
+
+	_getIssueNameFromEntityName(entityName = "") {
+		if (!entityName.startsWith(ISSUE_ENTITY_PREFIX)) return "";
+
+		return entityName.substring(
+			BimBaseDragger.OdConst.MARKUP_ENTITY_PREFIX.length
+		);
 	}
 }
